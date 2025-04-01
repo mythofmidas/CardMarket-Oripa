@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { useNavigate, useLocation  } from "react-router-dom";
+import { useTranslation} from "react-i18next";
 import { FormGroup, Form, Input, InputGroup } from "reactstrap";
 import { useAtom } from "jotai";
 
@@ -12,6 +12,8 @@ import Spinner from "../../components/Others/Spinner";
 
 import usePersistedUser from "../../store/usePersistedUser";
 import { bgColorAtom } from "../../store/theme";
+import { useEffect } from "react";
+import Sign from "../../components/Modals/Sign";
 
 const Login = () => {
   const { t } = useTranslation();
@@ -23,11 +25,35 @@ const Login = () => {
   const [isEmailVerifyPanel, setIsEmailVerifyPanel] = useState(false);
   const [showErrMessage, setShowErrMessage] = useState(false);
   const [spinFlag, setSpinFlag] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [msg, setMsg] = useState('');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const token = queryParams.get('token');
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
+  useEffect(() => {
+    const signin = async () => { 
+      if (token) {
+        setSpinFlag(true);
+        const res =  await api.post("/user/activate", { token });
+        setSpinFlag(false);
+        if (res.data.status === 1) {
+            localStorage.setItem("token", res.data.token);
+            // localStorage.setItem("user", JSON.stringify(res.data.user));
+            localStorage.setItem("loggedIn", true);
+            localStorage.setItem("testmode", false);
+            setUser(res.data.user);
+            navigate("/user/index");
+          }
+        else showToast(t(res.data.msg), "error");
+      }
+    }
+    signin();
+  }, [])
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   const togglePasswordVisibility = () => {
@@ -56,21 +82,30 @@ const Login = () => {
       setSpinFlag(true);
       const res = await api.post("/user/login", formData);
       setSpinFlag(false);
-
       if (res.data.status === 1) {
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
+        // localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("testmode", false);
         localStorage.setItem("loggedIn", true);
+        
         setUser(res.data.user);
-
         if (res.data.user.role === "admin") {
           navigate("/admin/index");
         } else {
-          navigate("/user/index");
+          navigate("/user");
         }
-      } else showToast(t(res.data.msg), "error");
+      } else if (res.data.status === 2) {
+        setIsEmailVerifyPanel(true);
+      }
+      else {
+        setIsModalOpen(true);
+        setMsg(res.data.msg);
+        // showToast(t(res.data.msg), "error");
+      }
     } catch (error) {
-      showToast(t("failedReq"), "error");
+      setIsModalOpen(true);
+      setMsg('failedReq');
+      // showToast(t("failedReq"), "error");
     }
   };
 
@@ -164,7 +199,7 @@ const Login = () => {
                 </button>
                 <button
                   className="text-light"
-                  onClick={() => navigate("/auth/forgotPass")}
+                  onClick={() => navigate("/auth/forgot")}
                 >
                   <div className="text-md my-3 text-blue-500 hover:text-blue-700 py-1">
                     {t("forgot_pass")}
@@ -185,6 +220,12 @@ const Login = () => {
               </div>
             </Form>
           </div>
+          <Sign
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            msg={msg}
+            bgColor={bgColor}
+          />
         </div>
       )}
     </>

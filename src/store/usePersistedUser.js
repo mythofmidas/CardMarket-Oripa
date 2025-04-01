@@ -5,13 +5,14 @@ import { UserAtom } from "./user";
 const usePersistedUser = () => {
   const [user, setUser] = useAtom(UserAtom);
 
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("user");
-    }
-  }, [user]);
+  // useEffect(() => {
+    // if (user) {
+      // localStorage.setItem("user", JSON.stringify(user));
+    // } else {
+      // localStorage.removeItem("user");
+      // localStorage.removeItem("testmode");
+    // }
+  // }, [user]);
 
   return [user, setUser];
 };

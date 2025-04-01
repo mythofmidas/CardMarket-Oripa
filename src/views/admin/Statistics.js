@@ -20,6 +20,8 @@ const Statistics = () => {
   const [pendingData, setPendingData] = useState([]);
   const [deliveringPeriod, setDeliveringPeriod] = useState("7");
   const [deliveringData, setDeliveringData] = useState([]);
+  const [isToggled, setIsToggled] = useState({ gacha: false, invite: false });
+  const [isStop, setIsStop] = useState(false);
 
   const { t } = useTranslation();
 
@@ -53,6 +55,10 @@ const Statistics = () => {
       setTotalIncome(res.data.totalIncome);
       // set prize status
       setPrizeStatus(res.data.prizeStatus);
+      // set gachaVisit Status
+      setIsToggled(res.data.currentStatus);
+      // set maintance mode
+      setIsStop(res.data.maintance);
       // get counts of prize as period and status
       caclCounts(res.data.periodPendings, Number(pendingPeriod), "pending");
       caclCounts(res.data.periodDeliverings, Number(deliveringPeriod), "delivering");
@@ -129,11 +135,109 @@ const Statistics = () => {
     if (type === "delivering") setDeliveringData([dateArray, countArray]);
   };
 
+  const handleInvite = async (e) => {
+    setAuthToken();
+
+    let status = { ...isToggled };
+    status.invite = !isToggled?.invite;
+    setSpinFlag(true);
+    const res = await api.post("/admin/gachastatus", {
+      current: status
+    });
+    setSpinFlag(false);
+    if (res.data.status) setIsToggled(status);
+  }
+  const handleGacha = async (e) => {
+    setAuthToken();
+
+    let status = { ...isToggled };
+    status.gacha = !isToggled?.gacha;
+    setSpinFlag(true);
+    const res = await api.post("/admin/gachastatus", {
+      current: status
+    });
+    setSpinFlag(false);
+    if (res.data.status) setIsToggled(status);
+  }
+
+  const handleMaintance = async () => {
+    setAuthToken();
+    setSpinFlag(true);
+    const res = await api.post("/admin/maintance", {
+      current: !isStop
+    })
+    setSpinFlag(false);
+    if (res.data.status) setIsStop(!isStop);
+  }
+
   return (
     <div className="px-3 pt-2 py-4">
       {spinFlag && <Spinner />}
-      <div className="w-full md:w-[100%] lg:w-[70%] mx-auto">
+      <div className="w-full md:w-[100%] lg:w-[70%] mx-auto mb-4">
         <PageHeader text={t("statistics")} />
+      </div>
+      <div className="mx-auto h-50 w-[60%] bg-white border-[1px] border-gray-200 rounded-md shadow-md shadow-gray-300 my-2">
+        <div className="flex items-center justify-center py-2">
+          <span className="text-3xl text-slate-600 pr-5">
+            {t("gachavisit")}
+          </span> 
+          <button
+            name='gacha'
+            onClick={handleGacha}
+            className={`relative inline-flex items-center justify-between w-32 h-10 border-2 rounded-full transition-all duration-300 ease-in-out ${isToggled?.gacha ? 'border-green-600 bg-green-200' : 'border-gray-400 bg-gray-200'}`}
+          >
+            <span
+              className={`absolute left-1 transition-transform duration-300 ease-in-out transform ${isToggled?.gacha ? 'translate-x-full' : 'translate-x-0'}`}
+            >
+              <span className={`font-bold text-lg ${isToggled?.gacha ? 'text-green-600' : 'text-gray-600'}`}>
+                {isToggled?.gacha ? 'ON' : 'OFF'}
+              </span>
+            </span>
+            <span
+              className={`absolute w-10 h-8 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out transform ${isToggled?.gacha ? 'translate-x-20' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
+        <div className="flex items-center justify-center py-2">
+          <span className="text-3xl text-slate-600 pr-5">
+            {t("invitefunctionstatus")}
+          </span> 
+          <button
+            onClick={handleInvite}
+            className={`relative inline-flex items-center justify-between w-32 h-10 border-2 rounded-full transition-all duration-300 ease-in-out ${isToggled?.invite ? 'border-green-600 bg-green-200' : 'border-gray-400 bg-gray-200'}`}
+          >
+            <span
+              className={`absolute left-1 transition-transform duration-300 ease-in-out transform ${isToggled?.invite ? 'translate-x-full' : 'translate-x-0'}`}
+            >
+              <span className={`font-bold text-lg ${isToggled?.invite ? 'text-green-600' : 'text-gray-600'}`}>
+                {isToggled?.invite ? 'ON' : 'OFF'}
+              </span>
+            </span>
+            <span
+              className={`absolute w-10 h-8 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out transform ${isToggled?.invite ? 'translate-x-20' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
+        <div className="flex items-center justify-center py-2">
+          <span className="text-3xl text-slate-600 pr-5">
+            {t("maintenancemode")}
+          </span> 
+          <button
+            onClick={handleMaintance}
+            className={`relative inline-flex items-center justify-between w-32 h-10 border-2 rounded-full transition-all duration-300 ease-in-out ${isStop ? 'border-green-600 bg-green-200' : 'border-gray-400 bg-gray-200'}`}
+          >
+            <span
+              className={`absolute left-1 transition-transform duration-300 ease-in-out transform ${isStop ? 'translate-x-full' : 'translate-x-0'}`}
+            >
+              <span className={`font-bold text-lg ${isStop ? 'text-green-600' : 'text-gray-600'}`}>
+                {isStop ? 'ON' : 'OFF'}
+              </span>
+            </span>
+            <span
+              className={`absolute w-10 h-8 bg-white rounded-full shadow-md transition-transform duration-300 ease-in-out transform ${isStop ? 'translate-x-20' : 'translate-x-0'}`}
+            />
+          </button>
+        </div>
       </div>
       <div className="flex flex-wrap justify-between items-start w-full lg:w-[90%] xl:w-[70%] mx-auto">
         <div className="h-auto flex flex-col w-full lg:w-[50%] p-2">

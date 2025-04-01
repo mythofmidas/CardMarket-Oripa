@@ -30,7 +30,7 @@ const CustomSelect = ({ options, selectedOption, setOption }) => {
         )}
       </div>
       {isOpen && (
-        <ul className="absolute w-full bg-white border-[1px] border-gray-200 p-0 m-0 cursor-pointer rounded-lg shadow-lg shadow-gray-50 z-10">
+        <ul className="w-full bg-white border-[1px] border-gray-200 p-0 m-0 cursor-pointer rounded-lg shadow-lg shadow-gray-50 z-10">
           {options.map((option) => (
             <li
               className="flex items-center px-3 p-2 border-b-[1px] border-gray-100 hover:bg-gray-100"

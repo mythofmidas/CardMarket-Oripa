@@ -46,11 +46,9 @@ const Card = ({ prize, checkbox }) => {
       </div>
       <div className="flex flex-wrap justify-end p-2 mt-[-24px]">
         <p className="text-blue-600 text-lg font-bold">
-          {prize.kind !== "first" &&
-            prize.kind !== "second" &&
-            prize.kind !== "third" &&
-            prize.kind !== "fourth" &&
-            t(prize.kind)}
+          {prize.kind === "rubbish" ? t(prize.nickname) : (
+            prize.kind === "last_prize" ? t(prize.kind) : ''
+          )}
         </p>
       </div>
     </div>

@@ -68,11 +68,12 @@ function Carousel() {
   };
 
   const handleAddOrEdit = async () => {
+    console.log("Hello World")
+
     if (!user.authority["carousel"]["write"]) {
       showToast(t("noPermission"), "error");
       return;
     }
-
     setMultipart();
     setAuthToken();
 

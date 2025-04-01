@@ -259,6 +259,7 @@ function Administrators() {
                 : null}
             </tbody>
           </table>
+
         </div>
         <div className="m-auto overflow-auto w-full md:w-[45%]">
           <div className="text-xl text-center">

@@ -27,6 +27,7 @@ const useAxiosInterceptor = () => {
               // Clear user data from local storage or state
               localStorage.removeItem("token");
               localStorage.removeItem("user");
+              localStorage.removeItem("testmode");
               setUser(null);
               // Redirect to login page
               navigate("/auth/login");

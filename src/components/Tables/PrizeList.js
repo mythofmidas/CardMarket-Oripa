@@ -29,7 +29,7 @@ function PrizeList({
   const [delPrizeId, setDelPrizeId] = useState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [spinFlag, setSpinFlag] = useState(false);
-  const [order, setOrder] = useState();
+  const [count, setCount] = useState([]);
 
   useEffect(() => {
     setAuthToken();
@@ -41,8 +41,7 @@ function PrizeList({
       setSpinFlag(true);
       const res = await api.get("/admin/prize");
       setSpinFlag(false);
-
-      if (res.data.status === 1)
+      if (res.data.status === 1) {
         switch (prizeType) {
           case "grade":
             setPrizes(
@@ -80,6 +79,18 @@ function PrizeList({
             setPrizes(res.data.prizes);
             break;
         }
+        const pz = res.data.prizes;
+        setCount(prevCount => {
+          return pz.map(prize => {
+            // Find the existing count object by ID
+            const existingCount = prevCount.find(item => item.id === prize._id);
+            return {
+                id: prize._id,
+                value: existingCount ? existingCount.value : 0 // Use existing value or default to 0
+            };
+        });
+        });
+      }
     } catch (error) {}
   };
 
@@ -115,8 +126,8 @@ function PrizeList({
       setSpinFlag(false);
 
       if (res.data.status === 1) {
-        showToast(t(res.data.msg));
         getPrizes();
+        showToast(t(res.data.msg));
       } else {
         showToast(t(res.data.msg), "error");
       }
@@ -125,11 +136,16 @@ function PrizeList({
     }
   };
 
-  const changeOrder = (e) => {
-    setOrder(e.target.value);
+  const changeOrder = (id, e) => {
+    const newValue = Number(e.target.value); // Get the new value from the input
+    setCount(prevCount => 
+        prevCount.map(item => 
+            item.id === id ? { ...item, value: newValue } : item // Update the specific item
+        )
+    );
   };
 
-  const addPrize = async (prizeId) => {
+  const addPrize = async (prizeId, order) => {
     try {
       if (!user.authority["gacha"]["write"]) {
         showToast(t("noPermission"), "error");
@@ -139,18 +155,19 @@ function PrizeList({
       const formData = {
         gachaId: gachaId,
         prizeId: prizeId,
+        order: order
       };
-      if (order) formData.order = order;
-
+      const existingCount = count.find(item => item.id === prizeId);
+      formData.order = existingCount.value;
+      
       setSpinFlag(true);
       const res = await api.post("/admin/gacha/set_prize", formData);
       setSpinFlag(false);
-
+      
       if (res.data.status === 1) {
-        showToast(t("successSet"), "success");
         getGacha();
         getPrizes();
-        setOrder("");
+        showToast(t("successSet"), "success");
       } else {
         showToast(t("failedSet"), "error");
       }
@@ -208,7 +225,8 @@ function PrizeList({
                       <input
                         type="number"
                         className="form-control w-28 mx-auto"
-                        onChange={changeOrder}
+                        onChange={(e) => changeOrder(data._id, e)}
+                        value={count.find(item => item.id == data._id).value}
                       />
                     </td>
                   )}
@@ -216,7 +234,7 @@ function PrizeList({
                     {role === "gacha" ? (
                       <button
                         className="bg-[#0276ff] text-white text-md py-1 px-3 rounded-md cursor-pointer"
-                        onClick={() => addPrize(data._id)}
+                        onClick={() => addPrize(data._id, data.order)}
                       >
                         {t("add")}
                       </button>

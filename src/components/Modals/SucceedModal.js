@@ -16,7 +16,7 @@ function SucceedModal({ isOpen, setIsOpen, text }) {
     <div
       className={`${
         isOpen ? "" : "hidden"
-      } fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-20`}
+      } fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-30`}
     >
       <div className="bg-white p-3 rounded shadow-lg w-full xxsm:w-[400px] mx-4 md:mx-0">
         <div className="flex justify-around items-center">

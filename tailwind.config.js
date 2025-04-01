@@ -62,6 +62,8 @@ module.exports = {
         theme_headertext_color: "#262626",
         alert_success: "#3ebaf4",
         alert_error: "#ff6600",
+        custom_gray: '#333333',
+        custom_purple: '#5E17EB'
       },
       keyframes: {
         fadeIn: {

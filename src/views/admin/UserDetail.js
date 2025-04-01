@@ -19,7 +19,6 @@ function UserDetail() {
   const [user, setUser] = useState(null);
   const [pointLog, setPointLog] = useState(null);
   const [spinFlag, setSpinFlag] = useState(false);
-
   useEffect(() => {
     getPointLog();
     getUserData();
@@ -76,6 +75,8 @@ function UserDetail() {
                   <th>{t("no")}</th>
                   <th>{t("point") + " " + t("amount")}</th>
                   <th>{t("usage")}</th>
+                  <th>{t("name")}</th>
+                  <th>{t("number")}</th>
                   <th>{t("date")}</th>
                 </tr>
               </thead>
@@ -85,8 +86,10 @@ function UserDetail() {
                     <tr key={i}>
                       <td>{i + 1}</td>
                       <td>{formatPrice(log.point_num)}pt</td>
-                      <td>{t(log.usage)}</td>
-                      <td>{formatDate(log.date)}</td>
+                      <td> {t(log.usage)}</td>
+                      <td> {log.usage === 'coupon' ? t(log.couponname) : t(log.gacha)}</td>
+                      <td> {t(log.number)}</td>
+                      <td>{formatDate(log.updatedAt)}</td>
                     </tr>
                   ))
                 ) : (

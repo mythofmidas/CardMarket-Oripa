@@ -1,100 +1,115 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAtom } from "jotai";
 
 import api from "../utils/api";
-import { setAuthToken } from "../utils/setHeader";
 import { showToast } from "../utils/toastUtil";
 import subCategories from "../utils/subCategories";
 
-import Progressbar from "../components/Others/progressbar";
-import GachaPriceLabel from "../components/Others/GachaPriceLabel";
 import ImageCarousel from "../components/Others/ImageCarousel";
 import NotEnoughPoints from "../components/Modals/NotEnoughPoints";
-import SucceedModal from "../components/Modals/SucceedModal";
 import Spinner from "../components/Others/Spinner";
 
-import usePersistedUser from "../store/usePersistedUser";
 import { bgColorAtom } from "../store/theme";
+import { categoryAtom } from "../store/category.js";
+import GachaBlog from "../components/Blogs/GachaBlog";
+import { gachasAtom, filterGachasAtom, homeAtom } from "../store/gachas";
+import { useMemo } from "react";
+import { Helmet } from 'react-helmet';
 
 const Index = () => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const navigate = useNavigate();
-  const [user, setUser] = usePersistedUser();
   const [bgColor] = useAtom(bgColorAtom);
+  const [gachas] = useAtom(gachasAtom);
+  const [homeSeo,] = useAtom(homeAtom);
 
-  const [category, setCategory] = useState(null);
   const [subCategory, setSubCategory] = useState(subCategories);
-  const [gacha, setGacha] = useState(null);
-  const [filteredGacha, setFilteredGacha] = useState();
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [filter, setFilter] = useState(["all"]);
+  const [filteredGacha, setFilteredGacha] = useAtom(filterGachasAtom);
+  const [categoryFilter, setCategoryFilter] = useAtom(categoryAtom);
+  const [category, setCategory] = useState(null);
+  const [filter, setFilter] = useState(['all']);
   const [order, setOrder] = useState("recommended");
   const [isOpenPointModal, setIsOpenPointModal] = useState(false);
-  const [isOpenLoggedModal, setIsOpenLoggedModal] = useState(false);
   const [spinFlag, setSpinFlag] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem("loggedIn")) {
-      setIsOpenLoggedModal(true);
-    }
-
-    getCategory();
-    getGacha();
+    const getData = async () => {
+      
+      getCategory();
+    };
+    getData();
   }, []);
 
-  useEffect(() => {
-    // Get gachas by main category
-    let filteredGachas = gacha?.filter(
-      (gacha) =>
-        gacha.isRelease === true &&
-        gacha.total_number > 0 &&
-        (categoryFilter === "all"
-          ? true
-          : gacha.category._id === categoryFilter)
-    );
-
+  useMemo(() => {
+    let filteredGachas;
+      filteredGachas= gachas?.filter(
+        (gacha) =>
+          gacha.isRelease === true &&
+          gacha.total_number > 0 &&
+          (categoryFilter === "all"
+            ? true
+            : gacha.category._id === categoryFilter)
+      );
     // Get gachas by sub category
-    if (filter.includes("lessThan100")) {
-      filteredGachas = filteredGachas.filter(
-        (item) =>
-          item.remain_prizes.filter((item) => item.order != 0).length <= 100
-      );
-    }
-    if (filter.includes("last_prize")) {
-    }
-    if (filter.includes("last_prize")) {
-      filteredGachas = filteredGachas.filter((item) =>
-        // Array.isArray(item.kind)
-        //   ? item.kind.some((kindItem) => kindItem.value === "last_prize")
-        //   : item.kind.value === "last_prize"
-        item.remain_prizes.some((item) => item.kind === "last_prize")
-      );
+    if (!filter.includes("all")) {
+      if (filter.includes("lessThan100")) {
+        filteredGachas = filteredGachas.filter(
+          (item) =>
+            (item.remain_prizes.length + item.rubbish_total_number) <= 100
+        );
+      }
+      if (filter.includes('last_prize')) {
+        filteredGachas = filteredGachas.filter(
+          (item) => (item.kind.some((items) => items.value === 'last_prize'))
+        );
+      }
+      if (filter.includes('once_per_day')) {
+        filteredGachas = filteredGachas.filter(
+          (item) => (item.kind.some((items) => items.value === 'once_per_day'))
+        );
+      }
+      if (filter.includes('500')) {
+        filteredGachas = filteredGachas.filter(
+          (item) => (item.kind.some((items) => items.value === '500'))
+        );
+      }
+      if (filter.includes('1000')) {
+        filteredGachas = filteredGachas.filter(
+          (item) => (item.kind.some((items) => items.value === '1000'))
+        );
+      }
+      if (filter.includes('10000')) {
+        filteredGachas = filteredGachas.filter(
+          (item) => (item.kind.some((items) => items.value === '10000'))
+        );
+      }
+      if (filter.includes('Inweek')) {
+        filteredGachas = filteredGachas.filter(
+          (item) => (item.kind.some((items) => items.value === 'Inweek'))
+        );
+      }
     }
 
     // Get gachas by order
     switch (order) {
       case "recommended":
         break;
-
       case "newest":
         filteredGachas?.sort(
           (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
         );
         break;
-
       case "popularity":
         filteredGachas?.sort(
           (a, b) =>
             Number(
-              b.total_number -
-                b.remain_prizes.filter((item) => item.order != 0).length
+              b.total_number - b.remain_prizes.length
             ) -
             Number(
-              a.total_number -
-                a.remain_prizes.filter((item) => item.order != 0).length
+              a.total_number -  a.remain_prizes.length
             )
         );
         break;
@@ -113,38 +128,16 @@ const Index = () => {
 
     // sort that place to at the end remain_prizes length is 0
     filteredGachas = filteredGachas?.sort((a, b) => {
-      return a.remain_prizes.filter((item) => item.order != 0).length === 0
+      return (a.remain_prizes.length + a.rubbish_total_number) === 0
         ? 1
-        : b.remain_prizes.filter((item) => item.order != 0).length === 0
+        : (b.remain_prizes.length + b.rubbish_total_number) === 0
         ? -1
         : 0;
     });
 
     // Set the final filtered array
     setFilteredGacha(filteredGachas);
-  }, [gacha, filter, categoryFilter, order]);
-
-  // update user data and update localstorage
-  const updateUserData = async () => {
-    setAuthToken();
-
-    try {
-      if (user) {
-        // update user date
-        const res = await api.get(`/user/get_user/${user._id}`);
-        if (res.data.status === 1) {
-          setUser(res.data.user);
-        } else {
-          showToast(t("tryLogin"), "error");
-          navigate("user/index");
-        }
-      }
-    } catch (error) {
-      showToast(t("tryLogin"), "error");
-      navigate("user/index");
-    }
-  };
-
+  }, [filter, categoryFilter, order]);
   // get main categories
   const getCategory = () => {
     api
@@ -158,28 +151,8 @@ const Index = () => {
         showToast(err, "error");
       });
   };
-
-  // get all gachas
-  const getGacha = async () => {
-    try {
-      setSpinFlag(true);
-      const res = await api.get("/admin/gacha");
-      setSpinFlag(false);
-
-      if (res.data.status === 1) {
-        setGacha(res.data.gachaList);
-        setFilteredGacha(res.data.gachaList);
-      } else {
-        showToast(t("failedReq"), "error");
-      }
-    } catch (error) {
-      showToast(t("failedReq"), "error");
-    }
-  };
-
   // change gacha by sub order
   const changeMainCat = (cat) => {
-    getGacha();
     setCategoryFilter(cat);
   };
 
@@ -190,7 +163,8 @@ const Index = () => {
     if (selSubGat === "all") {
       // If "all" is selected, reset the filter to contain only "all"
       selSubCats = ["all"];
-    } else {
+    } 
+    else {
       if (filter.includes(selSubGat)) {
         // If the filter already includes the item, remove it
         selSubCats = filter.filter(
@@ -236,74 +210,33 @@ const Index = () => {
 
   // change gacha by sub order
   const changeOrder = (e) => {
-    getGacha();
     setOrder(e.currentTarget.value);
   };
 
-  // draw gacha
-  const submitDrawGacha = async (gacha, counts) => {
-    if (!user) {
-      navigate("/auth/login");
-      return;
+  const gachabolg = () => {
+    if (filteredGacha === null || filteredGacha === undefined ||filteredGacha.length === 0) {
+      return (<div className="text-center mx-auto text-lg mt-4">
+        {t("nogacha")}
+      </div>);
     }
-
-    if (user.role === "admin") {
-      showToast(t("drawnAdmin"), "error");
-      return;
-    }
-
-    const totalPoints =
-      gacha.price *
-      (counts === "all"
-        ? gacha.remain_prizes.filter((item) => item.order != 0).length
-        : counts);
-    const remainPoints = user.point_remain;
-    if (remainPoints < totalPoints) {
-      setIsOpenPointModal(true);
-      return;
-    }
-
-    try {
-      setAuthToken();
-
-      setSpinFlag(true);
-      const res = await api.post("/admin/gacha/draw_gacha", {
-        gachaId: gacha._id,
-        counts: counts,
-        drawDate: new Date(),
-      });
-      setSpinFlag(false);
-
-      if (res.data.status === 1) {
-        updateUserData();
-
-        navigate("/user/showDrawedPrizes", {
-          state: { prizes: res.data.prizes },
-        });
-      } else {
-        switch (res.data.msg) {
-          case 0:
-            showToast(t("drawnEnoughPrize"), "error");
-            break;
-
-          case 1:
-            showToast(t("noEnoughPoints"), "error");
-            break;
-
-          default:
-            showToast(t("faileReq", "error"));
-            break;
-        }
-      }
-    } catch (error) {
-      showToast(t("faileReq", "error"));
-    }
-  };
+    return (   
+      filteredGacha.map((data, i) => {
+        return (<GachaBlog
+          data={data}  setIsOpenPointModal={setIsOpenPointModal} setSpinFlag={setSpinFlag} key={i} 
+        />);
+      })
+    );
+  }
 
   return (
     <div className="flex flex-grow">
       {spinFlag && <Spinner />}
-      <div className="w-full lg:w-[90%] xm:w-[80%] xmd:w-[70%] xl:w-[60%] md:mx-2 mt-16 mx-auto xm:p-2">
+      <Helmet>
+          <title>{homeSeo.title ? homeSeo.title : 'Oripa'}</title>
+          <meta name="description" content={homeSeo.desc} />
+          <meta name="keywords" content="oripa, gacha" />
+      </Helmet>
+      <div className="w-full lg:w-[90%] xm:w-[80%] xmd:w-[70%] xl:w-[60%]  md:mx-2 mt-16 mx-auto xm:p-2">
         <ImageCarousel />
         <div className="px-2">
           <div className="w-full flex justify-between overflow-auto text-red-800 shadow-md shadow-gray-200 px-2">
@@ -329,8 +262,9 @@ const Index = () => {
                     case "ch2":
                       catName = data.ch2Name;
                       break;
-                    case "vt":
+                    case "vn":
                       catName = data.vtName;
+                      
                       break;
                     case "en":
                       catName = data.enName;
@@ -435,127 +369,7 @@ const Index = () => {
           </div>
         </div>
         <div className="w-full flex flex-wrap justify-between xm:px-3">
-          {filteredGacha === null ||
-          filteredGacha === undefined ||
-          filteredGacha.length === 0 ? (
-            <div className="text-center mx-auto text-lg mt-4">
-              {t("nogacha")}
-            </div>
-          ) : (
-            filteredGacha.map((data, i) => {
-              return (
-                <div
-                  className="w-full xsm:w-[90%] xxsm:w-[70%] md:w-[50%] mx-auto p-2 p-1"
-                  key={i}
-                >
-                  <div className="p-2 flex flex-col justify-between border-2 hover:bg-white rounded-lg shadow-md shadow-gray-400 border-gray-300 hover:scale-[101%] outline-2 hover:outline-pink-500">
-                    <button
-                      className="relative cursor-pointer w-full"
-                      onClick={() => {
-                        navigate("/user/gachaDetail", {
-                          state: { gachaId: data._id },
-                        });
-                      }}
-                    >
-                      <img
-                        src={
-                          process.env.REACT_APP_SERVER_ADDRESS + data.img_url
-                        }
-                        alt="img_url"
-                        className="rounded-t h-[250px] xsm:h-[300px] xxsm:h-[300px] md:h-[320px] lg:h-[350px] w-full object-cover"
-                      />
-                      <div className="w-full h-[35px]">
-                        <div className="w-4/6 flex flex-col justify-center items-center absolute left-1/2 -translate-x-1/2 bottom-0 text-center">
-                          <GachaPriceLabel price={data.price} />
-                          <Progressbar
-                            progress={
-                              (data.remain_prizes.filter(
-                                (item) => item.order != 0
-                              ).length /
-                                data.total_number) *
-                              100
-                            }
-                            label={
-                              data.remain_prizes.filter(
-                                (item) => item.order != 0
-                              ).length +
-                              " / " +
-                              data.total_number
-                            }
-                            height={20}
-                          />
-                        </div>
-                      </div>
-                    </button>
-                    <div className="w-full flex flex-wrap justify-center">
-                      {data.remain_prizes.filter((item) => item.order != 0)
-                        .length === 0 ? (
-                        <button
-                          className="mx-1 text-white cursor-not-allowed bg-gray-400 text-center px-1 py-2.5 border-r-[1px] border-t-2 border-white rounded-lg m-0 xs:px-4 w-[60%]"
-                          disabled={true}
-                        >
-                          {t("soldOut")}
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            className="mx-1 cursor-pointer hover:opacity-50 text-white text-center px-1 py-2.5 border-r-[1px] border-t-2 border-white rounded-lg m-0 xs:px-4 w-[30%]"
-                            style={{
-                              backgroundColor: bgColor,
-                            }}
-                            onClick={() => {
-                              submitDrawGacha(data, 1);
-                            }}
-                          >
-                            {t("drawOne")}
-                          </button>
-                          {!data.kind.some(
-                            (item) => item.value === "once_per_day"
-                          ) ? (
-                            <>
-                              {data.remain_prizes.filter(
-                                (item) => item.order != 0
-                              ).length >= 10 && (
-                                <button
-                                  className="mx-1 cursor-pointer hover:opacity-50 text-white text-center px-1 py-2.5 border-r-[1px] border-t-2 border-white rounded-lg m-0 xs:px-4 w-[30%]"
-                                  onClick={() => {
-                                    submitDrawGacha(data, 10);
-                                  }}
-                                  style={{
-                                    backgroundColor: bgColor,
-                                  }}
-                                >
-                                  {t("drawTen")}
-                                </button>
-                              )}
-                              {data.type === 2 &&
-                                data.remain_prizes.filter(
-                                  (item) => item.order != 0
-                                ).length !== 1 && (
-                                  <button
-                                    className="mx-1 cursor-pointer hover:opacity-50 text-white text-center px-1 py-2.5  rounded-lg border-t-2 border-white m-0 xs:px-4 w-[30%]"
-                                    onClick={() => {
-                                      submitDrawGacha(data, "all");
-                                    }}
-                                    style={{
-                                      backgroundColor: bgColor,
-                                    }}
-                                  >
-                                    {t("drawAll")}
-                                  </button>
-                                )}
-                            </>
-                          ) : (
-                            ""
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
+         {gachabolg()}
         </div>
       </div>
       <NotEnoughPoints
@@ -566,11 +380,7 @@ const Index = () => {
         setIsOpen={setIsOpenPointModal}
         bgColor={bgColor}
       />
-      <SucceedModal
-        isOpen={isOpenLoggedModal}
-        setIsOpen={setIsOpenLoggedModal}
-        text={t("successLogin")}
-      />
+      
     </div>
   );
 };

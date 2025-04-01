@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import NavBar from "../../components/Aquicision/NavBar";
 import NotSelected from "../../components/Aquicision/NotSelected";
 import Delivering from "../../components/Aquicision/Delivering";
+import { Helmet } from 'react-helmet';
 
 function AcquisitionHistory() {
   const { t } = useTranslation();
@@ -14,9 +15,14 @@ function AcquisitionHistory() {
 
   return (
     <div className="w-full md:w-4/6 mx-auto pt-3 px-2">
+      {/* <Helmet> */}
+          {/* <title>Oripa</title> */}
+          {/* <meta name="description" content=/> */}
+          {/* <meta name="keywords" content="oripa, gacha" /> */}
+      {/* </Helmet> */}
       <div
         className="text-start text-xl text-slate-600 py-2 cursor-pointer"
-        onClick={() => navigate("user/index")}
+        onClick={() => navigate("/user/index")}
       >
         <i className="fa fa-chevron-left m-1.5 float-left"></i>
         {t("back")}

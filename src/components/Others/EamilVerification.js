@@ -1,27 +1,30 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import api from "../../utils/api";
+import { useTranslation } from "react-i18next";
 import { showToast } from "../../utils/toastUtil";
 
 import ImailVerifyImg from "../../assets/img/icons/common/check-email.svg";
+import Spinner from "./Spinner";
 
-const EmailVerification = ({ email, password, setIsEmailVerifyPanel }) => {
+const EmailVerification = ({ email, setIsEmailVerifyPanel }) => {
+  const { t } = useTranslation();
+  const [spinFlag, setSpinFlag] = useState(false);
   useEffect(() => {
     // sendEmail();
   }, []);
 
-  const sendEmail = () => {
-    api
-      .post("mail/gmail-send", { email: email, password: password })
-      .then((res) => {
-        if (res.data.status === 1) showToast("Email send success.");
-        else showToast("Email send Failed");
-      })
-      .catch((err) => showToast(err, "error"));
+  const sendEmail = async () => {
+    setSpinFlag(true);
+    const res = await api.post("user/gmail-send", { email: email});
+    setSpinFlag(false);
+    if (res.data.status === 1) showToast(t(res.data.msg), "success");
+    else showToast(t(res.data.msg), "error");
   };
 
   return (
     <div className="w-full flex flex-col items-center justify-center py-5 bg-white">
+      {spinFlag && <Spinner />}
       <img
         src={ImailVerifyImg}
         alt="Verification"

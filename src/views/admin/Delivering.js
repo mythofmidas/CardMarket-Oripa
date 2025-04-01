@@ -32,7 +32,6 @@ function Delivering() {
       setSpinFlag(true);
       const res = await api.get("/admin/deliveries");
       setSpinFlag(false);
-
       if (res.data.status === 1) {
         setDeliveries(res.data.prizes);
       }
@@ -43,7 +42,6 @@ function Delivering() {
 
   const handleChangeStatus = async (index) => {
     setAuthToken();
-
     if (!user.authority["delivering"]["write"]) {
       showToast(t("noPermission"), "error");
       return;
@@ -52,6 +50,7 @@ function Delivering() {
     try {
       const userId = sortedDeliveries[index].userId;
       const prizeId = sortedDeliveries[index].prizeId;
+      console.log(sortedDeliveries[index].prizeDeliverStatus)
 
       if (sortedDeliveries[index].prizeDeliverStatus === "shipped") {
         showToast(t("validDeliver"), "error");
@@ -127,7 +126,6 @@ function Delivering() {
     }
     return <i className="fa fa-sort ml-2" />;
   };
-
   return (
     <div className="w-full px-3 pt-2 py-12">
       {spinFlag && <Spinner />}
@@ -202,48 +200,48 @@ function Delivering() {
                   <td>{delivery.userName}</td>
                   <td>{delivery.userEmail}</td>
                   <td>
-                    {(delivery.shipAddress.country !== undefined
+                    {delivery.shipAddress !== null ? ((delivery.shipAddress?.country !== undefined
                       ? t(delivery.shipAddress.country) + ", "
                       : "") +
-                      (delivery.shipAddress.prefecture !== undefined
+                      (delivery.shipAddress?.prefecture !== undefined
                         ? delivery.shipAddress.prefecture + ", "
                         : "") +
-                      (delivery.shipAddress.address !== undefined
+                      (delivery.shipAddress?.address !== undefined
                         ? delivery.shipAddress.address + ", "
                         : "") +
-                      (delivery.shipAddress.addressLine1 !== undefined
+                      (delivery.shipAddress?.addressLine1 !== undefined
                         ? delivery.shipAddress.addressLine1 + ", "
                         : "") +
-                      (delivery.shipAddress.addressLine2 !== undefined
+                      (delivery.shipAddress?.addressLine2 !== undefined
                         ? delivery.shipAddress.addressLine2 + ", "
                         : "") +
-                      (delivery.shipAddress.building !== undefined
+                      (delivery.shipAddress?.building !== undefined
                         ? delivery.shipAddress.building + ", "
                         : "") +
-                      (delivery.shipAddress.districtCity !== undefined
+                      (delivery.shipAddress?.districtCity !== undefined
                         ? delivery.shipAddress.districtCity + ", "
                         : "") +
-                      (delivery.shipAddress.cityTown !== undefined
+                      (delivery.shipAddress?.cityTown !== undefined
                         ? delivery.shipAddress.cityTown + ", "
                         : "") +
-                      (delivery.shipAddress.cityDistrict !== undefined
+                      (delivery.shipAddress?.cityDistrict !== undefined
                         ? delivery.shipAddress.cityDistrict + ", "
                         : "") +
-                      (delivery.shipAddress.islandCity !== undefined
+                      (delivery.shipAddress?.islandCity !== undefined
                         ? delivery.shipAddress.islandCity + ", "
                         : "") +
-                      (delivery.shipAddress.suburbCity !== undefined
+                      (delivery.shipAddress?.suburbCity !== undefined
                         ? delivery.shipAddress.suburbCity + ", "
                         : "") +
-                      (delivery.shipAddress.state !== undefined
+                      (delivery.shipAddress?.state !== undefined
                         ? delivery.shipAddress.state + ", "
                         : "") +
-                      (delivery.shipAddress.stateProvinceRegion !== undefined
+                      (delivery.shipAddress?.stateProvinceRegion !== undefined
                         ? delivery.shipAddress.stateProvinceRegion + ", "
                         : "") +
-                      (delivery.shipAddress.zipCode !== undefined
+                      (delivery.shipAddress?.zipCode !== undefined
                         ? delivery.shipAddress.zipCode + ", "
-                        : "")}
+                        : "")) : ''}
                   </td>
                   <td>{delivery.prizeName}</td>
                   <td>

@@ -8,6 +8,7 @@ import PrizeVideo from "./views/admin/PrizeVideo.js";
 import Statistics from "./views/admin/Statistics.js";
 import User from "./views/admin/User.js";
 import Gacha from "./views/admin/Gacha.js";
+import SEO from "./views/admin/SEO.js";
 import Point from "./views/admin/Point.js";
 import GachaEdit from "./views/admin/GachaEdit.js";
 import UseTerms from "./views/admin/UseTerms.js";
@@ -16,6 +17,7 @@ import UserDetail from "./views/admin/UserDetail.js";
 import Delivering from "./views/admin/Delivering.js";
 import AdminLogin from "./views/auth/AdminLogin.js";
 import Login from "./views/auth/Login.js";
+import Forgot from "./views/auth/Forgot.js";
 import Register from "./views/auth/Register.js";
 import Profile from "./views/user/Profile.js";
 import PurchasePoint from "./views/user/PurchasePoint.js";
@@ -33,6 +35,8 @@ import InviteFriend from "./views/user/InviteFriend.js";
 import Rank from "./views/admin/Rank.js";
 import Theme from "./views/admin/Theme.js";
 import Carousel from "./views/admin/Carousel.js";
+import Rubbish from "./views/admin/Rubbish.js";
+import Coupon from "./views/admin/Coupon.js";
 
 var routes = [
   {
@@ -148,7 +152,7 @@ var routes = [
     layout: "/user",
   },
   {
-    path: "/inviteFriend",
+    path: "/enterCode",
     name: "inviteFriend",
     icon: "fa fa-film",
     component: <InviteFriend />,
@@ -218,6 +222,13 @@ var routes = [
     layout: "/admin",
   },
   {
+    path: "/rubbish",
+    name: "rubbish",
+    icon: "fa fa-gift",
+    component: <Rubbish />,
+    layout: "/admin",
+  },
+  {
     path: "/prizeVideo",
     name: "prizeVideo",
     icon: "fa fa-film",
@@ -237,6 +248,13 @@ var routes = [
     icon: "fa fa-modx",
     component: <GachaEdit />,
     layout: "/admin/sub",
+  },
+  {
+    path: "/coupon",
+    name: "coupon",
+    icon: "fa fa-gift",
+    component: <Coupon />,
+    layout: "/admin",
   },
   {
     path: "/delivering",
@@ -265,12 +283,24 @@ var routes = [
     icon: "ni ni-key-25 text-info",
     component: <AdminLogin />,
     layout: "/auth",
-  },
-  {
+  },{
+    path: "/seo",
+    name: "SEO",
+    icon: "fa fa-search",
+    component: <SEO />,
+    layout: "/admin",
+  },{
     path: "/login",
     name: "Login",
     icon: "ni ni-key-25 text-info",
     component: <Login />,
+    layout: "/auth",
+  },
+  {
+    path: "/forgot",
+    name: "Forgot",
+    icon: "ni ni-key-25 text-info",
+    component: <Forgot />,
     layout: "/auth",
   },
   {

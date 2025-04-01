@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAtom } from "jotai";
 
@@ -8,69 +8,56 @@ import formatPrice from "../../utils/formatPrice";
 import { showToast } from "../../utils/toastUtil";
 import { setAuthToken } from "../../utils/setHeader";
 
-import { googlePayConfig } from "../../payment/googlePayConfig";
-import { initiateUnivaPayTransaction } from "../../payment/univaPayRequest";
-
 import CustomSelect from "../../components/Forms/CustomSelect";
 import PuchaseSpinner from "../../components/Others/PuchaseSpinner";
-import Gpay from "../../assets/img/icons/common/google.png";
 import Spinner from "../../components/Others/Spinner";
-import ApplePay from "../../assets/img/icons/common/apple.png";
-import Univa from "../../assets/img/icons/common/univa.png";
+import StripePic from "../../assets/img/icons/common/stripe-card.png";
+import PaidyPic from "../../assets/img/icons/common/paidy.png";
+import AmazonPic from "../../assets/img/icons/common/amazonpay.png";
 
 import usePersistedUser from "../../store/usePersistedUser";
 import { bgColorAtom } from "../../store/theme";
+import { testAtom } from "../../store/test";
+import StripePayment from "../../payment/StripePayment";
+import Amazon from "../../payment/Amazon";
+import Paidy from "../../payment/Paidy";
+import StopModal from "../../components/Modals/StopModal";
 
 function PurchasePoint() {
   const [bgColor] = useAtom(bgColorAtom);
   const [user, setUser] = usePersistedUser();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [testmode] = useAtom(testAtom);
 
   const paymentOptions = [
-    { value: "gPay", label: "Google Pay", img: Gpay },
-    { value: "applePay", label: "Apple Pay", img: ApplePay },
-    { value: "univaPay", label: "Univa Pay", img: Univa },
+    { value: "stripe", label: t('Stripe'), img: StripePic },
+    { value: "amazon", label: "Amazon Pay", img: AmazonPic },
+    { value: "paidy", label: "Paidy", img: PaidyPic },
   ];
-  const [, setGPayReady] = useState(false);
   const [points, setPoints] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState(paymentOptions[0]);
   const [, setSelId] = useState(0);
-  const [waiting, setWaiting] = useState(false);
   const [spinFlag, setSpinFlag] = useState(false);
+  const [amount, setAmount] = useState(0);
+  const [statusPay, setStatusPay] = useState(false);
+  const [isStop, setIsStop] = useState(false);
+  const [isShow, setIsShow] = useState(false);
 
   useEffect(() => {
     setAuthToken();
     getPoints();
-
-    // google pay settings
-    const script = document.createElement("script");
-    script.src = "https://pay.google.com/gp/p/js/pay.js";
-    script.onload = onGooglePayLoaded;
-    document.body.appendChild(script);
+  
+    const amazonScript = document.createElement("script");
+    amazonScript.src = "https://static-fe.payments-amazon.com/checkout.js";
+    amazonScript.async = true;
+    document.body.appendChild(amazonScript);
+  
+    return () => {
+      document.body.removeChild(amazonScript);
+    };
   }, []);
-
-  const updateUserData = async () => {
-    setAuthToken();
-
-    try {
-      if (user) {
-        setSpinFlag(true);
-        const res = await api.get(`/user/get_user/${user._id}`);
-        setSpinFlag(false);
-
-        if (res.data.status === 1) {
-          setUser(res.data.user);
-        } else {
-          showToast(t("tryLogin"), "error");
-          navigate("user/index");
-        }
-      }
-    } catch (error) {
-      showToast(t("tryLogin"), "error");
-      navigate("user/index");
-    }
-  };
+  
 
   const getPoints = async () => {
     try {
@@ -79,6 +66,7 @@ function PurchasePoint() {
       setSpinFlag(false);
 
       setPoints(res.data.points);
+      setIsStop(res.data.isStop);
     } catch (error) {
       showToast(error, "error");
     }
@@ -95,96 +83,10 @@ function PurchasePoint() {
       });
 
       if (res.data.status === 1) {
-        setWaiting(true);
-
-        setTimeout(() => {
-          setWaiting(false);
-          updateUserData();
-          navigate("user/index");
-        }, 4000);
+        navigate("user/index");
       } else showToast(t(res.data.msg), "error");
     } catch (error) {
       showToast(error, "error");
-    }
-  };
-
-  const onGooglePayLoaded = () => {
-    if (window.google) {
-      const paymentsClient = new window.google.payments.api.PaymentsClient({
-        environment: googlePayConfig.environment,
-      });
-
-      paymentsClient
-        .isReadyToPay({
-          apiVersion: 2,
-          apiVersionMinor: 0,
-          allowedPaymentMethods:
-            googlePayConfig.paymentDataRequest.allowedPaymentMethods,
-        })
-        .then((response) => {
-          if (response.result) {
-            setGPayReady(true);
-          }
-        })
-        .catch((err) => {
-          console.error("Error loading Google Pay:", err);
-        });
-    }
-  };
-
-  const handlePay = async (amount) => {
-    try {
-      if (paymentMethod === null) {
-        showToast(t("selectPayOption"), "error");
-        return;
-      }
-
-      switch (paymentMethod.value) {
-        case "gPay":
-          const paymentsClient = new window.google.payments.api.PaymentsClient({
-            environment: googlePayConfig.environment,
-          });
-
-          const paymentDataRequest = {
-            ...googlePayConfig.paymentDataRequest,
-            transactionInfo: {
-              ...googlePayConfig.paymentDataRequest.transactionInfo,
-              totalPrice: amount.toString(),
-            },
-          };
-
-          const paymentData = await paymentsClient.loadPaymentData(
-            paymentDataRequest
-          );
-
-          if (paymentData) {
-            await purchase_point(amount);
-          }
-
-          break;
-
-        case "applePay":
-          console.log("apple pay");
-
-          break;
-
-        case "univaPay":
-          try {
-            await initiateUnivaPayTransaction(amount);
-            alert("Payment initiated successfully");
-          } catch (error) {
-            console.error("Payment failed", error);
-            alert("Payment failed");
-          }
-          console.log("univa pay");
-
-          break;
-
-        default:
-          break;
-      }
-    } catch (error) {
-      console.error("Payment failed:", error);
     }
   };
 
@@ -193,20 +95,41 @@ function PurchasePoint() {
       showToast(t("selectPayOption"), "error");
       return;
     }
-
-    purchase_point(amount);
+    if (testmode) {
+      showToast(t("thisTestmode"), "error");
+      return;
+    }
+    if (isStop) {
+      setIsShow(true);
+      return;
+    }
+    setAmount(amount);
   };
+  const payment =  () => {
+    if (!paymentMethod || !amount) return null;
+    if (paymentMethod.value === 'stripe') {
+      return <StripePayment amount={amount} setSpinFlag={setSpinFlag} setStatusPay={setStatusPay} setAmount={setAmount} />;
+    }
+    if (paymentMethod.value === 'amazon') {
+      return <Amazon amount={amount} setAmount={setAmount} />
+    }
+    if (paymentMethod.value === 'paidy') {
+      return <Paidy amount={amount} setAmount={setAmount} />
+    }
+  }
 
   return (
     <div className="flex flex-grow">
       {spinFlag && <Spinner />}
-      {waiting && <PuchaseSpinner />}
+      { statusPay && <PuchaseSpinner /> }
+      { !isStop && payment()}
+      
       <div className="w-full md:w-2/3 lg:w-1/2 p-3 mx-auto">
         <div className="w-full py-2">
           <div className="text-center text-xl text-slate-600">
             <i
               className="fa fa-chevron-left mt-1.5 float-left items-center cursor-pointer"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/user/index')}
             ></i>
             {t("purchasePoints")}
           </div>
@@ -229,7 +152,7 @@ function PurchasePoint() {
               </div>
             </div>
             <div className="flex flex-col justify-between bg-white rounded-lg mt-2">
-              <div className="p-1">
+              {!spinFlag && <div className="p-1 over">
                 {points && points.length !== 0 ? (
                   points.map((point, i) => (
                     <div key={i}>
@@ -272,11 +195,15 @@ function PurchasePoint() {
                 ) : (
                   <span className="text-center">{t("nopoint")}</span>
                 )}
-              </div>
+              </div>}
             </div>
           </div>
         </div>
       </div>
+      <StopModal
+        isStop={isShow}
+        setIsStop={setIsShow}
+      />
     </div>
   );
 }

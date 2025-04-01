@@ -12,7 +12,7 @@ import "../src/utils/i18next.js";
 export default function App() {
   useEffect(() => {
     initializeToast();
-  });
+  }, []);
 
   return (
     <BrowserRouter>

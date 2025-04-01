@@ -21,6 +21,7 @@ import PrizeCard from "../../components/Others/PrizeCard";
 
 import usePersistedUser from "../../store/usePersistedUser";
 
+
 const Prize = () => {
   const { t } = useTranslation();
   const fileInputRef = useRef(null);
@@ -81,12 +82,8 @@ const Prize = () => {
         showToast(t("selectImage"), "error");
       } else if (formData.name.trim() === "") {
         showToast(t("requiredName"), "error");
-      } else if (parseInt(formData.cashBack) <= 0) {
+      } else if (parseInt(formData.cashBack) < 0) {
         showToast(t("cashback") + " " + t("greaterThan"), "error");
-      } else if (formData.trackingNumber.trim() === "") {
-        showToast(t("trackingNumber") + " " + t("isRequired"), "error");
-      } else if (formData.deliveryCompany.trim() === "") {
-        showToast(t("deliveryCompany") + " " + t("isRequired"), "error");
       } else {
         setSpinFlag(true);
         const res = await api.post("/admin/prize", formData);
@@ -130,11 +127,17 @@ const Prize = () => {
     const file = event.target.files[0];
     if (file) {
       Papa.parse(file, {
-        complete: (results) => {
-          results.data.pop();
-          setPrizes(results.data);
-        },
         header: true,
+        skipEmptyLines: true, // Skip empty lines if any
+        complete: (results) => {
+          // Check if results.data is an array and has elements
+          if (Array.isArray(results.data) && results.data.length > 0) {
+            setPrizes(results.data);
+          }
+        },
+        error: (error) => {
+          console.error('Error parsing CSV:', error);
+        },
       });
     }
   };
@@ -158,6 +161,7 @@ const Prize = () => {
         showToast(t("selectCSV"), "error");
       } else {
         setSpinFlag(true);
+
         const res = await api.post("/admin/gacha/upload_bulk", {
           prizes: prizes,
         });
@@ -235,6 +239,7 @@ const Prize = () => {
               <input
                 type="number"
                 name="cashBack"
+                min={0}
                 className="p-1 w-full form-control"
                 onChange={changeFormData}
                 value={formData.cashBack}
@@ -256,7 +261,7 @@ const Prize = () => {
               >
                 {prizeType.map((item, i) => {
                   return (
-                    <option key={i} value={item}>
+                    i == 5 ? null : <option key={i} value={item}>
                       {t(item)}
                     </option>
                   );
@@ -379,6 +384,7 @@ const Prize = () => {
                         <td>
                           <div className="mx-auto w-[60px]">
                             <PrizeCard
+                              bucket={true}
                               img_url={data.img_url}
                               width={50}
                               height={80}

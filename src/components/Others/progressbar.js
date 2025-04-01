@@ -1,7 +1,9 @@
 const Progress_bar = ({ label, progress }) => {
   return (
-    <div className="w-full text-center">
-      <div className="h-[20px] bg-[#bbb] flex items-center w-full">
+    <div className="w-full text-center ">
+      <div className="h-[20px] bg-[#bbb] flex items-center w-full" style={{
+        borderRadius: '10px',
+      }}>
         <div
           className={`h-[18px] mx-[1px]`}
           style={{
@@ -10,8 +12,9 @@ const Progress_bar = ({ label, progress }) => {
               Math.round(progress) < 30
                 ? "#FF0800"
                 : Math.round(progress) < 60
-                ? "#FF8C00"
-                : "#4CBB17",
+                  ? "#FF8C00"
+                  : "#4CBB17",
+                  borderRadius: '10px',
           }}
         />
       </div>

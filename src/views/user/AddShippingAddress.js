@@ -378,14 +378,14 @@ function AddShippingAddress() {
               >
                 <option value={""}>{t("selectOption")}</option>
                 <option value={"japan"}>{t("japan")}</option>
-                <option value={"china_mainland"}>{t("china_mainland")}</option>
+                {/* <option value={"china_mainland"}>{t("china_mainland")}</option>
                 <option value={"china_hongkong"}>{t("china_hongkong")}</option>
                 <option value={"china_macau"}>{t("china_macau")}</option>
                 <option value={"taiwan"}>{t("taiwan")}</option>
                 <option value={"singapore"}>{t("singapore")}</option>
                 <option value={"vetnam"}>{t("vetnam")}</option>
                 <option value={"australia"}>{t("australia")}</option>
-                <option value={"unitedStates"}>{t("unitedStates")}</option>
+                <option value={"unitedStates"}>{t("unitedStates")}</option> */}
               </select>
               {showErrMessage && !shipAddress.country ? (
                 <span className="flex text-sm text-red-600 pt-2">

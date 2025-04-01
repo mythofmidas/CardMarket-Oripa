@@ -25,6 +25,7 @@ function Gacha() {
   const lang = i18n.language;
 
   const [formData, setFormData] = useState({
+    id: '',
     type: 1,
     name: "",
     price: 0,
@@ -33,6 +34,7 @@ function Gacha() {
     awardRarity: 0,
     order: 1,
     file: null,
+    time: 0
   });
   const [categories, setCategories] = useState([]);
   const [imgUrl, setImgUrl] = useState("");
@@ -40,7 +42,7 @@ function Gacha() {
   const [delGachaId, setDelGachaId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [spinFlag, setSpinFlag] = useState(false);
-  const [openModal, setOpenModal] = useState(false);
+  const [edit, setEdit] = useState(false);
 
   const subCats = subCategories.map((prize) => ({
     value: prize,
@@ -121,28 +123,29 @@ function Gacha() {
 
       setAuthToken();
       setMultipart();
-
       if (formData.name.trim() === "") {
         showToast(t("requiredGachaName"), "error");
-      } else if (parseFloat(formData.price) <= 0) {
+      } else if (parseFloat(formData.price) < 0) {
         showToast(t("price") + " " + t("greaterThan"), "error");
       } else if (formData.category.trim() === "") {
         showToast(t("selectOption") + " : " + t("category"), "error");
+      } else if (!formData.kind.length) {
+        showToast(t("selectOption") + " : " + t("kind"), "error");
       } else if (
         selSubCats.some((item) => item.value === "round_number_prize") &&
-        parseFloat(formData.awardRarity) <= 0
+        parseFloat(formData.awardRarity) < 0
       ) {
         showToast(t("awardRarity") + " " + t("greaterThan"), "error");
       } else if (
-        formData.file === NaN ||
-        formData.file === null ||
-        formData.file === undefined
-      ) {
-        showToast(t("selectImage"), "error");
-      } else {
-        setSpinFlag(true);
-        const res = await api.post("/admin/gacha", formData);
-        setSpinFlag(false);
+        !edit && (formData.file === NaN ||
+          formData.file === null ||
+          formData.file === undefined)
+        ) {
+          showToast(t("selectImage"), "error");
+        } else {
+          setSpinFlag(true);
+          const res = await api.post("/admin/gacha", formData);
+          setSpinFlag(false);
 
         if (res.data.status === 1) {
           showToast(t(res.data.msg), "success");
@@ -150,6 +153,7 @@ function Gacha() {
           fileInputRef.current.value = null;
           setFormData({
             ...formData,
+            id: '',
             type: 1,
             name: "",
             price: 0,
@@ -158,15 +162,17 @@ function Gacha() {
             kind: [],
             category: "",
             file: null,
+            time: 0
           });
           setSelSubCats([]);
+          if (edit) setEdit(false);
           removeMultipart();
           getCategory();
           getGacha();
         } else showToast(t(res.data.msg), "error");
       }
     } catch (error) {
-      showToast(t("failedReq"), "error");
+      showToast(error, "error");
     }
   };
 
@@ -214,6 +220,33 @@ function Gacha() {
       showToast(t("failedReq"), "error");
     }
   };
+
+  const gachaEdit = async (id) => {
+    if (!user.authority["gacha"]["write"]) {
+      showToast(t("noPermission"), "error");
+      return;
+    }
+    if (gacha[id].isRelease) {
+      showToast(t("notAllowed"), "error");
+      return;
+    }
+
+    setEdit(true);
+    fileInputRef.current.value = null;
+    setFormData({
+      ...formData,
+      id: gacha[id]._id,
+      type: gacha[id].type,
+      name: gacha[id].name,
+      price: gacha[id].price,
+      // awardRarity: gacha[id].awardRarity,
+      order: gacha[id].order,
+      // kind: gacha[id].kind,
+      // category: gacha[id].category,
+      time: gacha[id].time
+    });
+    setImgUrl(process.env.REACT_APP_SERVER_ADDRESS + gacha[id].img_url);
+  }
 
   return (
     <div className="relative px-3 pt-2 py-12">
@@ -287,6 +320,7 @@ function Gacha() {
               <input
                 name="price"
                 type="number"
+                min={0}
                 className="p-1 w-full form-control"
                 onChange={changeFormData}
                 value={formData.price}
@@ -376,6 +410,7 @@ function Gacha() {
               <input
                 name="order"
                 type="number"
+                min={0}
                 className="p-1 w-full form-control"
                 onChange={changeFormData}
                 value={formData.order}
@@ -383,12 +418,28 @@ function Gacha() {
                 autoComplete="order"
               />
             </div>
+            <div className="flex flex-wrap justify-between items-center my-1 px-2 w-full">
+              <label htmlFor="time" className="text-gray-700">
+                {t("time")}
+              </label>
+              <input
+                name="time"
+                type="number"
+                min={0}
+                className="p-1 w-full form-control"
+                onChange={changeFormData}
+                value={formData.time}
+                id="time"
+                autoComplete="time"
+              />
+            </div>
             <div className="flex flex-wrap justify-end">
               <AgreeButton
-                name={t("add")}
+                name={!edit ? t("add") : t('edit')}
                 addclassName="inline-block float-right"
                 onClick={addGacha}
-              />
+              /> 
+
             </div>
           </div>
         </div>
@@ -408,6 +459,8 @@ function Gacha() {
                 <th>{t("kind")}</th>
                 <th>{t("number")}</th>
                 <th>{t("order")}</th>
+                <th>{t("time")}</th>
+                <th>{t("action")}</th>
               </tr>
             </thead>
             <tbody>
@@ -464,19 +517,26 @@ function Gacha() {
                         </td>
                         <td>
                           {
-                            data.remain_prizes.filter((item) => item.order != 0)
-                              .length
+                            data.remain_prizes.length
                           }{" "}
                           / {data.total_number}
                         </td>
                         <td>{data.order}</td>
+                        <td>{data.time}</td>
+                        <td>
+                          <span
+                            id={data._id}
+                            className="fa fa-edit p-1 cursor-pointer"
+                            onClick={(e) => gachaEdit(i)}
+                          />
+                        </td>
                       </tr>
                       <tr
                         className={`border-2 ${
                           data.isRelease ? "bg-[#f2f2f2]" : ""
                         }`}
                       >
-                        <td colSpan="9">
+                        <td colSpan="10">
                           <div className="flex flex-wrap justify-center">
                             <button
                               className="py-1 px-4 m-1 bg-gray-200 text-center text-gray-600"
@@ -519,7 +579,7 @@ function Gacha() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="9">{t("nogacha")}</td>
+                  <td colSpan="10">{t("nogacha")}</td>
                 </tr>
               )}
             </tbody>

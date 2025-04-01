@@ -6,6 +6,7 @@ const prizeType = [
   // "round_number_prize",
   "last_prize",
   // "extra_prize",
+  "rubbish",
 ];
 
 export default prizeType;

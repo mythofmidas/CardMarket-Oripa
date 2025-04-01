@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAtom } from "jotai";
 import { useTranslation } from "react-i18next";
@@ -20,22 +20,80 @@ const ShowDrawedPrizes = () => {
   const [showPrizeFlag, setShowPrizeFlag] = useState(false);
   const [showNext, setShowNext] = useState(true);
   const [showVideoFlag, setShowFlagVideo] = useState(false);
+  // const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Reset to the beginning and play
-    videoRef.current.currentTime = 0;
-    videoRef.current.play();
+    // videoRef.current.currentTime = 0;
+    // videoRef.current.play();
 
     if (index === prizes.length - 1) {
       setShowNext(false);
     }
+    const video = videoRef.current;
+
+    // Set attributes
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+
+    // Prevent fullscreen on iOS
+    const handleWebkitBeginFullscreen = (event) => {
+      event.preventDefault();
+    };
+
+    // Handle click/tap events
+    const handleClick = (event) => {
+      event.preventDefault();
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    };
+
+    // Handle orientation change
+    const handleOrientationChange = () => {
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+    };
+
+    // Handle fullscreen changes
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    };
+
+    const handleWebkitFullscreenChange = () => {
+      if (document.webkitFullscreenElement) {
+        document.webkitExitFullscreen();
+      }
+    };
+
+    // Add event listeners
+    video.addEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+    video.addEventListener('click', handleClick);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    video.addEventListener('fullscreenchange', handleFullscreenChange);
+    video.addEventListener('webkitfullscreenchange', handleWebkitFullscreenChange);
+
+    // Cleanup
+    return () => {
+      video.removeEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+      video.removeEventListener('click', handleClick);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+      video.removeEventListener('fullscreenchange', handleFullscreenChange);
+      video.removeEventListener('webkitfullscreenchange', handleWebkitFullscreenChange);
+    };
+
+
   }, [index, prizes.length]);
 
   // skip video
-  const skipVideo = () => {
-    setShowFlagVideo(true);
-    setShowPrizeFlag(true);
-  };
+  // const skipVideo = () => {
+  //   setShowFlagVideo(true);
+  //   setShowPrizeFlag(true);
+  // };
 
   // end video
   const endVideo = () => {
@@ -57,43 +115,60 @@ const ShowDrawedPrizes = () => {
       state: { prizes: prizes },
     });
   };
+  // Memoize the video source URL
+  const videoSrc = useMemo(() => {
+    return process.env.REACT_APP_SERVER_ADDRESS + prizes[index].video;
+  }, [prizes, index]); // Recalculate only when prizes or index changes
+
+  // Handle video end event
+  const handleVideoEnd = useCallback(() => {
+    if (videoRef.current) {
+      endVideo();
+    }
+  }, [endVideo]);
 
   return (
     <>
       <div className={`${showPrizeFlag ? "hidden" : ""}`}>
+        {/* {loading && <Spinner />} */}
         <video
-          className="min-h-screen max-h-screen object-cover w-full"
+          className="object-fill h-[100vh] w-full"
+          id="myVideo"
           ref={videoRef}
-          onEnded={endVideo}
-          src={process.env.REACT_APP_SERVER_ADDRESS + prizes[index].video}
+          onEnded={handleVideoEnd}
+          preload="metadata"
+          src={videoSrc}
+          playsInline
+          webkit-playsinline
         />
-        <button
+        {/* <button
           className="fixed flex flex-wrap items-center bottom-4 left-4 border-1 cursor-pointer hover:opacity-50 opacity-80 text-white text-center text-lg rounded-md px-3 py-1"
           style={{ backgroundColor: bgColor }}
           onClick={() => skipVideo()}
         >
           {t("skipVideo")}
-        </button>
+        </button> */}
       </div>
       <div className={`m-auto ${!showPrizeFlag ? "hidden" : ""}`}>
         <PrizeCard img_url={prizes[index].img_url} width={300} height={500} />
       </div>
-      {showNext && (
+      {(showNext && showPrizeFlag) ? (
         <button
-          className="fixed flex flex-wrap items-center bottom-4 right-28 border-1 cursor-pointer hover:opacity-50 opacity-80 text-white text-center text-lg rounded-md px-3 py-1"
+          className="fixed flex flex-wrap items-center right-[4vh] bottom-14 border-1 cursor-pointer hover:opacity-50 opacity-80 text-white text-center text-lg rounded-md px-3 py-1"
           style={{ backgroundColor: bgColor }}
           onClick={() => nextPrize()}
         >
           {t("next")}
         </button>
-      )}
+      ) :
       <button
-        className="fixed flex flex-wrap items-center bottom-4 right-4 border-1 cursor-pointer hover:opacity-50 opacity-80 text-white text-center text-lg rounded-md px-3 py-1"
+        className="fixed flex flex-wrap items-center bottom-14 right-[4vh] border-1 cursor-pointer hover:opacity-50 opacity-80 text-white text-center text-lg rounded-md px-3 py-1"
         style={{ backgroundColor: bgColor }}
         onClick={() => finishPrize()}
       >
-        {t("finish")}
+        {(!showNext && showPrizeFlag) ? t("finish") : t("skipVideo")}
       </button>
+      }
     </>
   );
 };

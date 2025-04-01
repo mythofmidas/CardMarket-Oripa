@@ -38,7 +38,7 @@ const Auth = () => {
 
   const getThemeData = async () => {
     const res = await api.get("/admin/getThemeData");
-
+    
     if (res.data.status === 1 && res.data.theme) {
       if (res.data.theme.logoUrl) {
         setLogo(process.env.REACT_APP_SERVER_ADDRESS + res.data.theme.logoUrl);

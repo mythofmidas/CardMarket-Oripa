@@ -134,7 +134,7 @@ const Profile = () => {
               className="fa fa-chevron-left mt-1.5 float-left items-center cursor-pointer"
               onClick={() => navigate(-1)}
             ></i>
-            {t("my") + " " + t("profile")}
+            {t("profile")}
           </div>
           <hr className="w-full my-2"></hr>
         </div>
@@ -228,7 +228,7 @@ const Profile = () => {
                 </div>
               </div>
             </div>
-            <div className="w-full rounded-lg bg-white mt-3 p-2">
+            {/* <div className="w-full rounded-lg bg-white mt-3 p-2">
               <p className="w-full text-2xl text-center text-theme_headertext_color">
                 {t("account")}
               </p>
@@ -242,7 +242,7 @@ const Profile = () => {
                   {t("withdrawal")}
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
